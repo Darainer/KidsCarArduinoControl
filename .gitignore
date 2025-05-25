@@ -1,0 +1,9 @@
+# build artefacts
+.pio/
+build/
+*.hex
+*.elf
+# vscode
+.vscode/
+# Arduino-IDE
+*.ino.*
