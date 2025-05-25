@@ -13,12 +13,10 @@ Class-based Arduino driver for the wiring shown in
 ## Quick start
 
 ```bash
-git clone https://github.com/your-name/my-fourwd-drive.git
-cd my-fourwd-drive
+git clone git@github.com:Darainer/KidsCarArduinoControl.git
+cd KidsCarArduinoControl
 
-# 1) PlatformIO -------------------------------
-pio run -t upload          # set your port /env in platformio.ini
-
-# 2) or Arduino-CLI ---------------------------
-arduino-cli compile -b arduino:avr:nano:cpu=atmega328
-arduino-cli upload -b arduino:avr:nano:cpu=atmega328 -p /dev/ttyUSB0
+# compile / upload using the make file
+make                           # compile locally → build/FourWD_Demo.hex
+make upload PORT=/dev/ttyUSB0  # flash Nano (override PORT if needed)
+make monitor PORT=/dev/ttyUSB0 # open 115200‑baud serial console
