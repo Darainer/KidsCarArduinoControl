@@ -3,32 +3,56 @@
 
 #include <Arduino.h>
 
+/**
+ * @brief Helper class for a 4‑wheel drive kids car using four BTS7960 H‑bridges.
+ *
+ *  ▸ Reads a 0‑5 V throttle on an analog pin.
+ *  ▸ Reads a 3‑position toggle: FAST, SLOW, REVERSE (uses INPUT_PULLUP).
+ *  ▸ Drives two PWM pins: RPWM (forward) and LPWM (reverse).
+ *  ▸ Internally ramps PWM for soft start/stop and enforces speed caps.
+ */
 class FourWD {
 public:
-    FourWD(uint8_t rpwm = 5,  uint8_t lpwm = 6,
-           uint8_t fastSw = 3, uint8_t revSw = 4,
-           uint8_t throttle = A0);
+    //--------------------------------------------------------------------
+    // Constructor — all pins default to the schematic you supplied.
+    //--------------------------------------------------------------------
+    FourWD(uint8_t rpwmPin  = 5,   ///< RPWM → BTS7960 forward input
+           uint8_t lpwmPin  = 6,   ///< LPWM → BTS7960 reverse input
+           uint8_t fastSwPin = 3,  ///< FAST switch position (to GND when active)
+           uint8_t revSwPin  = 4,  ///< REVERSE switch position (to GND when active)
+           uint8_t thrPin    = A0  ///< 0‑5 V throttle pedal
+           );
 
-    void begin();
-    void poll();                // call repeatedly from loop()
+    //--------------------------------------------------------------------
+    // Life‑cycle
+    //--------------------------------------------------------------------
+    void begin();   ///< Call once from setup()
+    void poll();    ///< Call every loop() iteration
 
-    // optional tweaks
-    void setDeadband(uint16_t adc);
-    void setRampStep(float step);
-    void setSlowPct(uint8_t pct);
-    void setRevPct(uint8_t pct);
+    //--------------------------------------------------------------------
+    // Optional run‑time tuning helpers
+    //--------------------------------------------------------------------
+    void setDeadband(uint16_t adcCounts); ///< Ignore pedal noise below this ADC value (default = 30)
+    void setRampStep(float step);         ///< ΔPWM per poll() (default = 3)
+    void setSlowPct(uint8_t pct);         ///< % cap when switch is in SLOW (default = 50)
+    void setRevPct(uint8_t pct);          ///< % cap in REVERSE           (default = 30)
 
 private:
-    const uint8_t _rpwm, _lpwm, _fastSw, _revSw, _throttle;
-    uint16_t _deadBand  = 30;
-    float    _rampStep  = 3.0;
-    uint8_t  _slowPct   = 50;
-    uint8_t  _revPct    = 30;
+    // Pin mapping (fixed per instance)
+    const uint8_t _rpwmPin, _lpwmPin, _fastSwPin, _revSwPin, _thrPin;
 
-    float _targetPWM = 0;
-    float _currentPWM = 0;
+    // Tunables
+    uint16_t _deadBand = 30;   // ADC counts treated as zero
+    float    _rampStep = 3.0;  // PWM counts per poll()
+    uint8_t  _slowPct  = 50;   // % ceiling in slow mode
+    uint8_t  _revPct   = 30;   // % ceiling in reverse
 
-    void _ramp();
+    // State variables
+    float _targetPWM  = 0.0f;
+    float _currentPWM = 0.0f;
+
+    // Helper
+    void _applyRamp();
 };
 
-#endif
+#endif  // FOURWD_H
