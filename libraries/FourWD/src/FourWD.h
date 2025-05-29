@@ -1,58 +1,79 @@
+// -----------------------------------------------------------------------------
+// FourWD.h   —   Public interface for the 4‑wheel‑drive helper library
+// -----------------------------------------------------------------------------
+//  • Reads a Hall‑effect / pot throttle (0‑5 V) on an analog pin.
+//  • Reads a 3‑position toggle (FAST / SLOW / REVERSE) on two digital pins.
+//  • Drives two PWM pins (RPWM / LPWM) that fan out to four BTS7960 boards.
+//  • Applies a slew‑rate limiter (“ramp”) and speed caps for smooth control.
+//  • Can stream live debug once you compile with ‑DDEBUG.
+// -----------------------------------------------------------------------------
 #ifndef FOURWD_H
 #define FOURWD_H
 
 #include <Arduino.h>
 
 /**
- * @brief Helper class for a 4‑wheel drive kids car using four BTS7960 H‑bridges.
- *
- *  ▸ Reads a 0‑5 V throttle on an analog pin.
- *  ▸ Reads a 3‑position toggle: FAST, SLOW, REVERSE (uses INPUT_PULLUP).
- *  ▸ Drives two PWM pins: RPWM (forward) and LPWM (reverse).
- *  ▸ Internally ramps PWM for soft start/stop and enforces speed caps.
+ * @class FourWD
+ * @brief Single‑class wrapper that hides all the boring I/O glue so your
+ *        sketch stays tiny: just call `begin()` once, then `poll()` in loop().
  */
 class FourWD {
 public:
     //--------------------------------------------------------------------
-    // Constructor — all pins default to the schematic you supplied.
+    // Constructor — change pins if your wiring differs from the diagram.
     //--------------------------------------------------------------------
-    FourWD(uint8_t rpwmPin  = 5,   ///< RPWM → BTS7960 forward input
-           uint8_t lpwmPin  = 6,   ///< LPWM → BTS7960 reverse input
-           uint8_t fastSwPin = 3,  ///< FAST switch position (to GND when active)
-           uint8_t revSwPin  = 4,  ///< REVERSE switch position (to GND when active)
-           uint8_t thrPin    = A0  ///< 0‑5 V throttle pedal
-           );
+    FourWD(uint8_t rpwmPin   = 5,   ///< RPWM → BTS7960 forward input
+           uint8_t lpwmPin   = 6,   ///< LPWM → BTS7960 reverse input
+           uint8_t fastSwPin = 3,   ///< FAST switch (to GND when active)
+           uint8_t revSwPin  = 4,   ///< REVERSE switch (to GND when active)
+           uint8_t thrPin    = A0   ///< 0‑5 V throttle wiper
+    );
 
     //--------------------------------------------------------------------
     // Life‑cycle
     //--------------------------------------------------------------------
-    void begin();   ///< Call once from setup()
-    void poll();    ///< Call every loop() iteration
+    void begin();   ///< Must be called from `setup()`
+    void poll();    ///< Call as often as possible from `loop()`
 
     //--------------------------------------------------------------------
-    // Optional run‑time tuning helpers
+    // Run‑time tuning helpers (serial or GUI can call these live)
     //--------------------------------------------------------------------
-    void setDeadband(uint16_t adcCounts); ///< Ignore pedal noise below this ADC value (default = 30)
-    void setRampStep(float step);         ///< ΔPWM per poll() (default = 3)
+    void setDeadband(uint16_t adcCounts); ///< Ignore throttle noise below this ADC value (default = 30)
+    void setRampStep(float step);         ///< PWM Δ per `poll()` (default = 3)
     void setSlowPct(uint8_t pct);         ///< % cap when switch is in SLOW (default = 50)
     void setRevPct(uint8_t pct);          ///< % cap in REVERSE           (default = 30)
 
+    //--------------------------------------------------------------------
+    // Debug / telemetry getters (read‑only)
+    //--------------------------------------------------------------------
+    uint16_t currentThrottleRaw() const { return _lastAdc;  } ///< Most recent raw ADC (0–1023)
+    uint8_t  currentPwm()         const { return _currentPWM; } ///< Current PWM duty (0–255)
+
 private:
-    // Pin mapping (fixed per instance)
+    // -----------------------------------------------------------------
+    // Immutable wiring (set once in the constructor)
+    // -----------------------------------------------------------------
     const uint8_t _rpwmPin, _lpwmPin, _fastSwPin, _revSwPin, _thrPin;
 
-    // Tunables
-    uint16_t _deadBand = 30;   // ADC counts treated as zero
-    float    _rampStep = 3.0;  // PWM counts per poll()
-    uint8_t  _slowPct  = 50;   // % ceiling in slow mode
-    uint8_t  _revPct   = 30;   // % ceiling in reverse
+    // -----------------------------------------------------------------
+    // Tunable parameters (may be changed at run‑time)
+    // -----------------------------------------------------------------
+    uint16_t _deadBand = 30;   ///< ADC counts treated as “no pedal”
+    float    _rampStep = 3.0;  ///< ΔPWM per poll() call
+    uint8_t  _slowPct  = 50;   ///< Speed cap in SLOW mode  (percent)
+    uint8_t  _revPct   = 30;   ///< Speed cap in REVERSE    (percent)
 
-    // State variables
-    float _targetPWM  = 0.0f;
-    float _currentPWM = 0.0f;
+    // -----------------------------------------------------------------
+    // Real‑time state variables (updated every poll)
+    // -----------------------------------------------------------------
+    uint16_t _lastAdc    = 0;   ///< Raw throttle reading saved for debug
+    float    _targetPWM  = 0.0f;///< Desired PWM after mapping & caps
+    float    _currentPWM = 0.0f;///< Actual PWM being output (after ramp)
 
-    // Helper
-    void _applyRamp();
+    // -----------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------
+    void _applyRamp();          ///< Slew‑rate‑limit _currentPWM → motors
 };
 
-#endif  // FOURWD_H
+#endif // FOURWD_H
