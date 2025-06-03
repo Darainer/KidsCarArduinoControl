@@ -38,7 +38,9 @@ public:
     //--------------------------------------------------------------------
     // Run‑time tuning helpers (serial or GUI can call these live)
     //--------------------------------------------------------------------
-    void setDeadband(uint16_t adcCounts); ///< Ignore throttle noise below this ADC value (default = 30)
+    void setDeadband(uint16_t adcCounts); ///< Ignore throttle noise below this ADC value (default = 200)
+    void setLowerThrottleCap(uint8_t lower); ///< Min ADC reading (default = 230)
+    void setUpperThrottleCap(uint8_t upper); ///< Max ADC reading (default = 800)
     void setRampStep(float step);         ///< PWM Δ per `poll()` (default = 3)
     void setSlowPct(uint8_t pct);         ///< % cap when switch is in SLOW (default = 50)
     void setRevPct(uint8_t pct);          ///< % cap in REVERSE           (default = 30)
@@ -58,7 +60,9 @@ private:
     // -----------------------------------------------------------------
     // Tunable parameters (may be changed at run‑time)
     // -----------------------------------------------------------------
-    uint16_t _deadBand = 30;   ///< ADC counts treated as “no pedal”
+    uint16_t _deadBand = 200;   ///< ADC counts treated as “no pedal”
+    uint16_t _thrMin   = 230;   ///< Min ADC reading (default = 230)
+    uint16_t _thrMax   = 800;   ///< Max ADC reading (default = 800)
     float    _rampStep = 3.0;  ///< ΔPWM per poll() call
     uint8_t  _slowPct  = 50;   ///< Speed cap in SLOW mode  (percent)
     uint8_t  _revPct   = 30;   ///< Speed cap in REVERSE    (percent)

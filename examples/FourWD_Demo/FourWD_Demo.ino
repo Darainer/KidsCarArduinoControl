@@ -10,5 +10,20 @@ rev 10 – 100 (%)        example: rev 30
 
 FourWD car;           // defaults match the schematic
 
-void setup() { car.begin(); }
-void loop()  { car.poll();  }
+void setup() { 
+car.begin();
+car.setDeadband(200); ///< Ignore throttle noise below this ADC value (default = 200)
+car.setLowerThrottleCap(230); ///< Min ADC reading (default = 230)
+car.setUpperThrottleCap(800); ///< Max ADC reading (default = 800)
+car.setRampStep(1);         ///< PWM Δ per `poll()` (default = 3)
+#ifdef DEBUG
+    Serial.begin(115200);
+#endif
+}
+void loop()  { 
+    car.poll(); 
+#ifdef DEBUG
+        Serial.print(F("Throttle:")); Serial.print(car.currentThrottleRaw());
+        Serial.print(F("  PWM:"));    Serial.println(car.currentPwm());
+#endif
+}

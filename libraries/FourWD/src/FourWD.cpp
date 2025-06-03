@@ -30,9 +30,6 @@ void FourWD::begin()
     analogWrite(_rpwmPin, 0);
     analogWrite(_lpwmPin, 0);
 
-#ifdef DEBUG
-    Serial.begin(115200);
-#endif
 }
 
 //--------------------------------------------------------------------
@@ -43,7 +40,8 @@ void FourWD::poll()
     // 1) Read throttle (0–1023) and apply dead‑band
     _lastAdc = analogRead(_thrPin);
     int adc  = _lastAdc;
-    if (adc < _deadBand) adc = 0;
+    if (adc < _deadBand) adc = 0; // ignore noise below deadband -> clamp to 0
+    
 
     // 2) Determine speed cap based on switch position
     uint8_t limitPct;
@@ -54,29 +52,21 @@ void FourWD::poll()
     else                                        // centre = slow
         limitPct = _slowPct;
 
-    // 3) Map throttle → target PWM (0‑255), then apply cap
+    // 3) Map effective throttle range → target PWM (0‑255)
     uint8_t pwmMax   = (255UL * limitPct) / 100;
-    _targetPWM = map(adc, 0, 1023, 0, pwmMax);
+    _targetPWM = map(adc, _thrMin, _thrMax, 0, pwmMax);
 
     // 4) Slew toward target and update outputs
     _applyRamp();
 
-#ifdef DEBUG
-    // ───── heartbeat every 500 ms ─────
-    static uint32_t dbgTimer = 0;
-    if (millis() - dbgTimer >= 500) {
-        dbgTimer = millis();
-        Serial.print(F("Throttle:")); Serial.print(_lastAdc);
-        Serial.print(F("  Limit%:")); Serial.print(limitPct);
-        Serial.print(F("  PWM:"));    Serial.println(_currentPWM);
-    }
-#endif
 }
 
 //--------------------------------------------------------------------
 // Runtime‑tuneable setters
 //--------------------------------------------------------------------
 void FourWD::setDeadband(uint16_t v) { _deadBand = v; }
+void FourWD::setLowerThrottleCap(uint8_t low ){ _thrMin = low; }
+void FourWD::setUpperThrottleCap(uint8_t high) { _thrMax = high; }
 void FourWD::setRampStep(float s)    { _rampStep = s; }
 void FourWD::setSlowPct(uint8_t p)   { _slowPct  = p; }
 void FourWD::setRevPct(uint8_t p)    { _revPct   = p; }
