@@ -42,6 +42,7 @@ public:
     void setLowerThrottleCap(uint8_t lower); ///< Min ADC reading (default = 230)
     void setUpperThrottleCap(uint8_t upper); ///< Max ADC reading (default = 800)
     void setRampStep(float step);         ///< PWM Δ per `poll()` (default = 3)
+    void setBrakeRampStep(float step); ///< PWM Δ per `poll()` when ramping down (default = 3)
     void setSlowPct(uint8_t pct);         ///< % cap when switch is in SLOW (default = 50)
     void setRevPct(uint8_t pct);          ///< % cap in REVERSE           (default = 30)
 
@@ -63,7 +64,8 @@ private:
     uint16_t _deadBand = 200;   ///< ADC counts treated as “no pedal”
     uint16_t _thrMin   = 230;   ///< Min ADC reading (default = 230)
     uint16_t _thrMax   = 800;   ///< Max ADC reading (default = 800)
-    float    _rampStep = 3.0;  ///< ΔPWM per poll() call
+    float    _rampStep = 1.0;  ///< ΔPWM per poll() call
+    float   _brakeRampStep = 3.0; ///< ΔPWM per poll() when ramping down
     uint8_t  _slowPct  = 50;   ///< Speed cap in SLOW mode  (percent)
     uint8_t  _revPct   = 30;   ///< Speed cap in REVERSE    (percent)
 

@@ -54,7 +54,7 @@ void FourWD::poll()
 
     // 3) Map effective throttle range → target PWM (0‑255)
     uint8_t pwmMax   = (255UL * limitPct) / 100;
-    _targetPWM = map(adc, _thrMin, _thrMax, 0, pwmMax);
+    _targetPWM = map(adc, 0, _thrMax, 0, pwmMax);
 
     // 4) Slew toward target and update outputs
     _applyRamp();
@@ -68,6 +68,7 @@ void FourWD::setDeadband(uint16_t v) { _deadBand = v; }
 void FourWD::setLowerThrottleCap(uint8_t low ){ _thrMin = low; }
 void FourWD::setUpperThrottleCap(uint8_t high) { _thrMax = high; }
 void FourWD::setRampStep(float s)    { _rampStep = s; }
+void FourWD::setBrakeRampStep(float s) { _brakeRampStep = s; }
 void FourWD::setSlowPct(uint8_t p)   { _slowPct  = p; }
 void FourWD::setRevPct(uint8_t p)    { _revPct   = p; }
 
@@ -80,7 +81,7 @@ void FourWD::_applyRamp()
     if (_currentPWM < _targetPWM)
         _currentPWM = min(_currentPWM + _rampStep, _targetPWM);
     else if (_currentPWM > _targetPWM)
-        _currentPWM = max(_currentPWM - _rampStep, _targetPWM);
+        _currentPWM = max(_currentPWM - _brakeRampStep, _targetPWM);
 
     // 2) Drive exactly one direction pin at a time
     if (digitalRead(_revSwPin) == LOW) {

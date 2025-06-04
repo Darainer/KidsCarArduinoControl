@@ -13,9 +13,10 @@ FourWD car;           // defaults match the schematic
 void setup() { 
 car.begin();
 car.setDeadband(200); ///< Ignore throttle noise below this ADC value (default = 200)
-car.setLowerThrottleCap(230); ///< Min ADC reading (default = 230)
-car.setUpperThrottleCap(800); ///< Max ADC reading (default = 800)
-car.setRampStep(1);         ///< PWM Δ per `poll()` (default = 3)
+car.setLowerThrottleCap(250); ///< Min ADC reading (default = 230)
+car.setUpperThrottleCap(840); ///< Max ADC reading (default = 800)
+car.setRampStep(0.05);         ///< PWM Δ per `poll()` 
+car.setBrakeRampStep(2.0); ///< PWM Δ per `poll()` when ramping down 
 #ifdef DEBUG
     Serial.begin(115200);
 #endif
