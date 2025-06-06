@@ -37,28 +37,53 @@ void FourWD::begin()
 //--------------------------------------------------------------------
 void FourWD::poll()
 {
-    // 1) Read throttle (0–1023) and apply dead‑band
-    _lastAdc = analogRead(_thrPin);
-    int adc  = _lastAdc;
-    if (adc < _deadBand) adc = 0; // ignore noise below deadband -> clamp to 0
-    
+    readInputs();           // SECTION 1: Get sensor inputs
+    generateDesiredPWM();   // SECTION 2: Generate desired PWM
+    writeToMotor();         // SECTION 3: Send PWM to motor
+}
 
-    // 2) Determine speed cap based on switch position
+void FourWD::readInputs()
+{
+    _lastAdc = analogRead(_thrPin);  // Read throttle (0–1023)
+    _isReverse = (digitalRead(_revSwPin) == LOW); // reverse switch active?
+    _isFastMode = (digitalRead(_fastSwPin) == LOW); // fast switch active?
+}
+
+void FourWD::generateDesiredPWM()
+{    
+    if (_lastAdc < _deadBand) _lastAdc = 0; // ignore noise below deadband -> clamp to 0
+
+    // Determine speed cap based on switch position
     uint8_t limitPct;
-    if (digitalRead(_revSwPin) == LOW)          // reverse?
+    if (_isReverse)         // reverse?
         limitPct = _revPct;
-    else if (digitalRead(_fastSwPin) == LOW)    // fast?
-        limitPct = 100;
-    else                                        // centre = slow
+    else if (_isFastMode)   // fast?
+        limitPct = _fastPct;
+    else                  // centre = slow
         limitPct = _slowPct;
 
-    // 3) Map effective throttle range → target PWM (0‑255)
-    uint8_t pwmMax   = (255UL * limitPct) / 100;
-    _targetPWM = map(adc, 0, _thrMax, 0, pwmMax);
+    // Map effective throttle range → target PWM (0‑255)
+    uint8_t pwmMax = (255UL * limitPct) / 100;
+    _targetPWM = map(_lastAdc, 0, _thrMax, 0, pwmMax);
+    
+    // Apply ramping logic here
+    // Nudge _currentPWM toward _targetPWM by ±_rampStep
+    if (_currentPWM < _targetPWM)
+        _currentPWM = min(_currentPWM + _rampStep, _targetPWM);
+    else if (_currentPWM > _targetPWM)
+        _currentPWM = max(_currentPWM - _brakeRampStep, _targetPWM);
+}
 
-    // 4) Slew toward target and update outputs
-    _applyRamp();
-
+void FourWD::writeToMotor()
+{
+    // Drive exactly one direction pin at a time
+    if (_isReverse) {
+        analogWrite(_lpwmPin, static_cast<int>(_currentPWM)); // reverse
+        analogWrite(_rpwmPin, 0);
+    } else {
+        analogWrite(_rpwmPin, static_cast<int>(_currentPWM)); // forward
+        analogWrite(_lpwmPin, 0);
+    }
 }
 
 //--------------------------------------------------------------------
@@ -71,27 +96,6 @@ void FourWD::setRampStep(float s)    { _rampStep = s; }
 void FourWD::setBrakeRampStep(float s) { _brakeRampStep = s; }
 void FourWD::setSlowPct(uint8_t p)   { _slowPct  = p; }
 void FourWD::setRevPct(uint8_t p)    { _revPct   = p; }
-
-//--------------------------------------------------------------------
-// _applyRamp() — protect drivetrain by limiting dPWM/dt
-//--------------------------------------------------------------------
-void FourWD::_applyRamp()
-{
-    // 1) Nudge _currentPWM toward _targetPWM by ±_rampStep
-    if (_currentPWM < _targetPWM)
-        _currentPWM = min(_currentPWM + _rampStep, _targetPWM);
-    else if (_currentPWM > _targetPWM)
-        _currentPWM = max(_currentPWM - _brakeRampStep, _targetPWM);
-
-    // 2) Drive exactly one direction pin at a time
-    if (digitalRead(_revSwPin) == LOW) {
-        analogWrite(_lpwmPin, static_cast<int>(_currentPWM)); // reverse
-        analogWrite(_rpwmPin, 0);
-    } else {
-        analogWrite(_rpwmPin, static_cast<int>(_currentPWM)); // forward
-        analogWrite(_lpwmPin, 0);
-    }
-}
 
 // -----------------------------------------------------------------------------
 // End of FourWD.cpp

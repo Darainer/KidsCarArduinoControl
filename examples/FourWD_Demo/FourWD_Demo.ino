@@ -16,7 +16,7 @@ car.setDeadband(200); ///< Ignore throttle noise below this ADC value (default 
 car.setLowerThrottleCap(250); ///< Min ADC reading (default = 230)
 car.setUpperThrottleCap(840); ///< Max ADC reading (default = 800)
 car.setRampStep(0.05);         ///< PWM Δ per `poll()` 
-car.setBrakeRampStep(2.0); ///< PWM Δ per `poll()` when ramping down 
+car.setBrakeRampStep(0.15); ///< PWM Δ per `poll()` when ramping down 
 #ifdef DEBUG
     Serial.begin(115200);
 #endif

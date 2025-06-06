@@ -51,6 +51,10 @@ public:
     //--------------------------------------------------------------------
     uint16_t currentThrottleRaw() const { return _lastAdc;  } ///< Most recent raw ADC (0–1023)
     uint8_t  currentPwm()         const { return _currentPWM; } ///< Current PWM duty (0–255)
+    uint8_t  currentTargetPwm()   const { return _targetPWM;  } ///< Target PWM after mapping & caps
+    uint8_t  currentMappedThrottle() const { return _thrMapped;  } ///< Mapped throttle (0–255) after deadband, mapping, and speed cap
+    uint8_t  isFastMode()         const { return _isFastMode; } ///< Is FAST mode active? (HIGH = fast, LOW = slow)
+    uint8_t  isReverse()         const { return _isReverse; } ///< Is REVERSE mode active? (HIGH = reverse, LOW = forward)
 
 private:
     // -----------------------------------------------------------------
@@ -67,19 +71,25 @@ private:
     float    _rampStep = 1.0;  ///< ΔPWM per poll() call
     float   _brakeRampStep = 3.0; ///< ΔPWM per poll() when ramping down
     uint8_t  _slowPct  = 50;   ///< Speed cap in SLOW mode  (percent)
+    uint8_t  _fastPct  = 100;  ///< Speed cap in FAST mode  (percent)
     uint8_t  _revPct   = 30;   ///< Speed cap in REVERSE    (percent)
 
     // -----------------------------------------------------------------
     // Real‑time state variables (updated every poll)
     // -----------------------------------------------------------------
+    uint8_t  _isFastMode   = 0;   ///< FAST switch state (HIGH = fast, LOW = slow)
+    uint8_t  _isReverse  = 0;   ///< REVERSE switch state (HIGH = reverse)
     uint16_t _lastAdc    = 0;   ///< Raw throttle reading saved for debug
+    uint8_t  _thrMapped  = 0;   ///< Mapped throttle (0–255) after deadband, mapping, and speed cap
     float    _targetPWM  = 0.0f;///< Desired PWM after mapping & caps
     float    _currentPWM = 0.0f;///< Actual PWM being output (after ramp)
 
     // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
-    void _applyRamp();          ///< Slew‑rate‑limit _currentPWM → motors
+    void readInputs();         ///< Read ADC and switch states
+    void generateDesiredPWM(); ///< Generate target PWM based on throttle and switch states
+    void writeToMotor();       ///< Write PWM to motors based on _currentPWM and _isReverse
 };
 
 #endif // FOURWD_H
