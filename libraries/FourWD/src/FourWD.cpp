@@ -61,12 +61,13 @@ void FourWD::generateDesiredPWM()
     uint16_t adcClamp = constrain(_lastAdc, _thrMin, _thrMax);
     _targetPWM = map(adcClamp, _thrMin, _thrMax, 0, pwmMax);
 
-    // Apply ramping logic here
-    // Nudge _currentPWM toward _targetPWM by ±_rampStep
+    // Apply ramping logic - Nudge _currentPWM toward _targetPWM by ±_rampStep
     if (_currentPWM < _targetPWM)
         _currentPWM = min(_currentPWM + _rampStep, _targetPWM);
     else if (_currentPWM > _targetPWM)
         _currentPWM = max(_currentPWM - _brakeRampStep, _targetPWM);
+    
+    _currentPWM = constrain(_currentPWM, 0, pwmMax); // add final clamp to ensure we never exceed the max PWM
 }
 
 void FourWD::writeToMotor()
