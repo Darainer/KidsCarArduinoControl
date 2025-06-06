@@ -39,8 +39,8 @@ public:
     // Run‑time tuning helpers (serial or GUI can call these live)
     //--------------------------------------------------------------------
     void setDeadband(uint16_t adcCounts); ///< Ignore throttle noise below this ADC value (default = 200)
-    void setLowerThrottleCap(uint8_t lower); ///< Min ADC reading (default = 230)
-    void setUpperThrottleCap(uint8_t upper); ///< Max ADC reading (default = 800)
+    void setLowerThrottleCap(uint16_t lower); ///< Min ADC reading (default = 230)
+    void setUpperThrottleCap(uint16_t upper); ///< Max ADC reading (default = 800)
     void setRampStep(float step);         ///< PWM Δ per `poll()` (default = 3)
     void setBrakeRampStep(float step); ///< PWM Δ per `poll()` when ramping down (default = 3)
     void setSlowPct(uint8_t pct);         ///< % cap when switch is in SLOW (default = 50)

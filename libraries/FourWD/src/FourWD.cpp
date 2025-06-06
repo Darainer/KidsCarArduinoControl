@@ -92,8 +92,8 @@ uint8_t FourWD::determineSpeedCap()
 // Runtime‑tuneable setters
 //--------------------------------------------------------------------
 void FourWD::setDeadband(uint16_t v) { _deadBand = v; }
-void FourWD::setLowerThrottleCap(uint8_t low ){ _thrMin = low; }
-void FourWD::setUpperThrottleCap(uint8_t high) { _thrMax = high; }
+void FourWD::setLowerThrottleCap(uint16_t low ){ _thrMin = low; }
+void FourWD::setUpperThrottleCap(uint16_t high) { _thrMax = high; }
 void FourWD::setRampStep(float s)    { _rampStep = s; }
 void FourWD::setBrakeRampStep(float s) { _brakeRampStep = s; }
 void FourWD::setSlowPct(uint8_t p)   { _slowPct  = p; }
