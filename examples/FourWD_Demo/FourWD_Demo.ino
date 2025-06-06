@@ -26,6 +26,7 @@ void loop()  {
 #ifdef DEBUG
         Serial.print(F("Throttle:")); Serial.print(car.currentThrottleRaw());
         Serial.print(F("  PWM:"));    Serial.println(car.currentPwm());
+        Serial.print("  Target:"); Serial.print(car.currentTargetPwm());
         Serial.print("FAST="); Serial.print(car.isFastMode());
 #endif
 }
