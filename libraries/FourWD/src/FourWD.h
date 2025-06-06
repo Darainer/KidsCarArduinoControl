@@ -90,6 +90,7 @@ private:
     void readInputs();         ///< Read ADC and switch states
     void generateDesiredPWM(); ///< Generate target PWM based on throttle and switch states
     void writeToMotor();       ///< Write PWM to motors based on _currentPWM and _isReverse
+    uint8_t determineSpeedCap(); ///< Determine speed cap based on switch states
 };
 
 #endif // FOURWD_H

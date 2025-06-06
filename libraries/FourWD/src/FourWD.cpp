@@ -54,18 +54,13 @@ void FourWD::generateDesiredPWM()
     if (_lastAdc < _deadBand) _lastAdc = 0; // ignore noise below deadband -> clamp to 0
 
     // Determine speed cap based on switch position
-    uint8_t limitPct;
-    if (_isReverse)         // reverse?
-        limitPct = _revPct;
-    else if (_isFastMode)   // fast?
-        limitPct = _fastPct;
-    else                  // centre = slow
-        limitPct = _slowPct;
+    uint8_t limitPct = determineSpeedCap();
 
     // Map effective throttle range → target PWM (0‑255)
     uint8_t pwmMax = (255UL * limitPct) / 100;
-    _targetPWM = map(_lastAdc, 0, _thrMax, 0, pwmMax);
-    
+    uint16_t adcClamp = constrain(_lastAdc, _thrMin, _thrMax);
+    _targetPWM = map(adcClamp, _thrMin, _thrMax, 0, pwmMax);
+
     // Apply ramping logic here
     // Nudge _currentPWM toward _targetPWM by ±_rampStep
     if (_currentPWM < _targetPWM)
@@ -86,6 +81,12 @@ void FourWD::writeToMotor()
     }
 }
 
+uint8_t FourWD::determineSpeedCap()
+{
+    if (_isReverse)   return _revPct;   // REVERSE always wins
+    if (_isFastMode)  return _fastPct;  // FAST next
+    return _slowPct;                    // otherwise SLOW
+}
 //--------------------------------------------------------------------
 // Runtime‑tuneable setters
 //--------------------------------------------------------------------
