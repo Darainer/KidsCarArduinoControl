@@ -11,7 +11,10 @@ FourWD::FourWD(uint8_t rpwmPin, uint8_t lpwmPin,
                uint8_t thrPin)
     : _rpwmPin(rpwmPin), _lpwmPin(lpwmPin),
       _fastSwPin(fastSwPin), _revSwPin(revSwPin),
-      _thrPin(thrPin) {}
+      _thrPin(thrPin),
+      _currentPWM(0.0f),    // initialize as float
+      _lastDirection(false) // track last direction for safe swaps
+{}
 
 //--------------------------------------------------------------------
 // begin() — one‑time hardware initialisation
@@ -29,7 +32,6 @@ void FourWD::begin()
     // Keep motors off until first poll()
     analogWrite(_rpwmPin, 0);
     analogWrite(_lpwmPin, 0);
-
 }
 
 //--------------------------------------------------------------------
@@ -61,23 +63,39 @@ void FourWD::generateDesiredPWM()
     uint16_t adcClamp = constrain(_lastAdc, _thrMin, _thrMax);
     _targetPWM = map(adcClamp, _thrMin, _thrMax, 0, pwmMax);
 
+    // Handle direction changes safely: ramp down before swap
+    if (_isReverse != _lastDirection && _currentPWM > 0.0f) {
+        // Ramp down _currentPWM to 0 before changing direction
+        if (_currentPWM > _brakeRampStep) {
+            _currentPWM = max(_currentPWM - _brakeRampStep, 0.0f);
+            // Do NOT update direction until ramped down
+            return;
+        } else {
+            _currentPWM = 0.0f;
+            _lastDirection = _isReverse;
+            // Now allow direction change
+        }
+    }
+
     // Apply ramping logic - Nudge _currentPWM toward _targetPWM by ±_rampStep
     if (_currentPWM < _targetPWM)
-        _currentPWM = min(_currentPWM + _rampStep, _targetPWM);
+        _currentPWM = min(_currentPWM + _rampStep, (float)_targetPWM);
     else if (_currentPWM > _targetPWM)
-        _currentPWM = max(_currentPWM - _brakeRampStep, _targetPWM);
-    
-    _currentPWM = constrain(_currentPWM, 0, pwmMax); // add final clamp to ensure we never exceed the max PWM
+        _currentPWM = max(_currentPWM - _brakeRampStep, (float)_targetPWM);
+
+    _currentPWM = constrain(_currentPWM, 0.0f, (float)pwmMax); // final clamp
 }
 
 void FourWD::writeToMotor()
 {
+    uint8_t pwmOut = static_cast<uint8_t>(round(_currentPWM));
+
     // Drive exactly one direction pin at a time
     if (_isReverse) {
-        analogWrite(_lpwmPin, static_cast<int>(_currentPWM)); // reverse
+        analogWrite(_lpwmPin, pwmOut); // reverse
         analogWrite(_rpwmPin, 0);
     } else {
-        analogWrite(_rpwmPin, static_cast<int>(_currentPWM)); // forward
+        analogWrite(_rpwmPin, pwmOut); // forward
         analogWrite(_lpwmPin, 0);
     }
 }
