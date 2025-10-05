@@ -78,6 +78,7 @@ private:
     // Real‑time state variables (updated every poll)
     // -----------------------------------------------------------------
     uint8_t  _isFastMode   = 0;   ///< FAST switch state (HIGH = fast, LOW = slow)
+    bool    _lastDirection; // track last direction for safe swaps
     uint8_t  _isReverse  = 0;   ///< REVERSE switch state (HIGH = reverse)
     uint16_t _lastAdc    = 0;   ///< Raw throttle reading saved for debug
     uint8_t  _thrMapped  = 0;   ///< Mapped throttle (0–255) after deadband, mapping, and speed cap
